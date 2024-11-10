@@ -152,6 +152,13 @@ chico sundermann">
                 <i class="hamburger align-self-center"></i>
             </a>
 
+            <form class="d-none d-sm-inline-block" action="{{ url_for('profile.search_user') }}" method="get">
+                <div class="input-group input-group-navbar">
+                    <input type="text" id="search-query" name="query" class="form-control rounded-search"
+                           placeholder="Search users..." aria-label="Search">
+                </div>
+            </form>            
+
             <form class="d-none d-sm-inline-block" onsubmit="submitSearchForm(event)">
                 <div class="input-group input-group-navbar">
                     <input type="text" id="search-query" class="form-control rounded-search"

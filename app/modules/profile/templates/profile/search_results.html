@@ -1,0 +1,19 @@
+{% extends "base_template.html" %}
+
+{% block content %}
+    <h2>Search results for "{{ query }}"</h2>
+    
+    {% if users %}
+        <ul class="list-group">
+            {% for user in users %}
+                <li class="list-group-item">
+                    <a href="{{ url_for('profile.view_profile', user_id=user.id) }}">
+                        {{ user.name }} {{ user.surname }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No users found matching "{{ query }}"</p>
+    {% endif %}
+{% endblock %}
