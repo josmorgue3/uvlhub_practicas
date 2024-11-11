@@ -164,3 +164,16 @@ class DOIMapping(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     dataset_doi_old = db.Column(db.String(120))
     dataset_doi_new = db.Column(db.String(120))
+
+class Rating(db.Model):
+    __tablename__ = 'ratings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    dataset_id = db.Column(db.Integer, db.ForeignKey('data_set.id'), nullable=False)
+    rating = db.Column(db.Integer, nullable=False)  # Valor de 1 a 5
+
+    def __init__(self, user_id, dataset_id, rating):
+        self.user_id = user_id
+        self.dataset_id = dataset_id
+        self.rating = rating

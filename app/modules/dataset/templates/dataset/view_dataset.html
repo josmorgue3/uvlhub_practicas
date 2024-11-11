@@ -13,20 +13,50 @@
     .option-button:last-child {
         margin-bottom: 0;
     }
+    .rating {
+        display: flex;
+        justify-content: center;
+        direction: rtl;
+        font-size: 3rem; /* Ajusta el tamaño aquí */
+        margin-top: 10px;
+    }
+
+.rating input {
+    display: none;
+}
+
+.rating label {
+    cursor: pointer;
+    color: #ddd; /* Color gris para las estrellas sin seleccionar */
+    transition: color 0.2s;
+}
+
+.rating label:hover,
+.rating label:hover ~ label,
+.rating input:checked ~ label {
+    color: #ffc107; /* Color dorado para las estrellas seleccionadas */
+}
 </style>
+
 {% endblock %}
 
 {% block content %}
 
 <div class="row mb-3">
-
-    <div class="col-6">
-        <a href="/explore" class="btn btn-primary btn-sm" id="search" style="border-radius: 5px;">
+    <div class="col-6 d-flex align-items-center">
+        <a href="/explore" class="btn btn-primary btn-sm me-2" id="search" style="border-radius: 5px;">
             <i data-feather="search" class="center-button-icon"></i>
             Explore more datasets
         </a>
+        <!-- Botón de valoración -->
+        <button class="btn btn-primary btn-sm me-2" id="rate-button" style="border-radius: 5px;" data-bs-toggle="modal" data-bs-target="#rateModal">
+            <i data-feather="star"></i> Rate this dataset
+        </button>
+        <!-- Promedio de valoraciones -->
+        <span class="badge bg-warning text-dark" id="average-rating">
+            Average Rating: {{ average_rating if average_rating else 'No ratings yet' }}
+        </span>
     </div>
-
 </div>
 
 <div class="row">
@@ -360,6 +390,43 @@
     </div>
 </div>
 
+<!-- Modal de valoración -->
+<div class="modal fade" id="rateModal" tabindex="-1" aria-labelledby="rateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rateModalLabel">Rate this Dataset</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="mb-3">Please rate this dataset</p>
+                <form id="rate-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="dataset_id" value="{{ dataset.id }}">
+                    
+                    <!-- Barra de estrellas con indicador de valor -->
+                    <div class="rating">
+                        <input type="radio" name="rating" value="5" id="5"><label for="5">☆</label>
+                        <input type="radio" name="rating" value="4" id="4"><label for="4">☆</label>
+                        <input type="radio" name="rating" value="3" id="3"><label for="3">☆</label>
+                        <input type="radio" name="rating" value="2" id="2"><label for="2">☆</label>
+                        <input type="radio" name="rating" value="1" id="1"><label for="1">☆</label>
+                    </div>
+            
+                    <!-- Mostrar cantidad de estrellas seleccionadas -->
+                    <p id="rating-value" class="text-warning" style="font-size: 1.5rem; margin-top: 10px;">0 Stars</p>
+                </form>                
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitRating()">Submit Rating</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <script type="text/javascript" src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
 
 
@@ -493,5 +560,50 @@
         });
     }
 </script>
+
+<!-- Código para actualizar el valor de la selección de estrellas -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const ratingInputs = document.querySelectorAll('.rating input');
+        const ratingValueDisplay = document.getElementById('rating-value');
+    
+        ratingInputs.forEach(input => {
+            input.addEventListener('change', function () {
+                const starValue = this.value; // Obtener el valor del input seleccionado
+                ratingValueDisplay.textContent = `${starValue} Star${starValue > 1 ? 's' : ''}`; // Actualizar el texto
+            });
+        });
+    });
+</script>
+
+<script>
+    function submitRating() {
+        const form = document.getElementById("rate-form");
+        const formData = new FormData(form);
+        
+        fetch("/dataset/rate", {
+            method: "POST",
+            body: formData,
+            headers: {
+                "X-CSRFToken": "{{ csrf_token() }}"  // Asegúrate de incluir el token CSRF si es necesario
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Respuesta recibida:", data);  // Depuración
+            if (data.average_rating) {
+                document.getElementById("average-rating").textContent = `Average Rating: ${data.average_rating}`;
+            }
+            const modal = bootstrap.Modal.getInstance(document.getElementById("rateModal"));
+            modal.hide();
+        })
+        .catch(error => console.error("Error al enviar la valoración:", error));
+    }
+    
+    document.addEventListener('DOMContentLoaded', function () {
+        feather.replace();
+    });
+    </script>
+    
 
 {% endblock %}

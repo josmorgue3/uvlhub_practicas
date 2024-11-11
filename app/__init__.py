@@ -2,6 +2,7 @@ import os
 
 from flask import Flask
 
+from flask_wtf import CSRFProtect
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 from flask_migrate import Migrate
@@ -16,13 +17,14 @@ from core.managers.logging_manager import LoggingManager
 load_dotenv()
 
 # Create the instances
+csrf = CSRFProtect()
 db = SQLAlchemy()
 migrate = Migrate()
 
 
 def create_app(config_name='development'):
     app = Flask(__name__)
-
+    csrf.init_app(app)
     # Load configuration according to environment
     config_manager = ConfigManager(app)
     config_manager.load_config(config_name=config_name)

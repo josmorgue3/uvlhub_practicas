@@ -30,7 +30,8 @@ from app.modules.dataset.services import (
     DSMetaDataService,
     DSViewRecordService,
     DataSetService,
-    DOIMappingService
+    DOIMappingService,
+    RatingService
 )
 from app.modules.zenodo.services import ZenodoService
 
@@ -240,10 +241,8 @@ def download_dataset(dataset_id):
 
     return resp
 
-
 @dataset_bp.route("/doi/<path:doi>/", methods=["GET"])
 def subdomain_index(doi):
-
     # Check if the DOI is an old DOI
     new_doi = doi_mapping_service.get_new_doi(doi)
     if new_doi:
@@ -259,12 +258,16 @@ def subdomain_index(doi):
     # Get dataset
     dataset = ds_meta_data.data_set
 
-    # Save the cookie to the user's browser
+    # Calcula el promedio de valoraciones del dataset
+    average_rating = RatingService.get_average_rating(dataset.id)  # Asegúrate de que `get_average_rating` esté bien implementado
+
+    # Guarda la cookie en el navegador del usuario
     user_cookie = ds_view_record_service.create_cookie(dataset=dataset)
-    resp = make_response(render_template("dataset/view_dataset.html", dataset=dataset))
+    resp = make_response(render_template("dataset/view_dataset.html", dataset=dataset, average_rating=average_rating))
     resp.set_cookie("view_cookie", user_cookie)
 
     return resp
+
 
 
 @dataset_bp.route("/dataset/unsynchronized/<int:dataset_id>/", methods=["GET"])
@@ -278,3 +281,21 @@ def get_unsynchronized_dataset(dataset_id):
         abort(404)
 
     return render_template("dataset/view_dataset.html", dataset=dataset)
+
+
+@dataset_bp.route('/dataset/rate', methods=['POST'])
+@login_required
+def rate_dataset():
+    user_id = current_user.id
+    dataset_id = request.form.get('dataset_id')
+    rating = int(request.form.get('rating'))
+    
+    # Instancia del servicio de valoraciones
+    rating_service = RatingService()
+    rating_service.add_rating(user_id, dataset_id, rating)
+    
+    # Calcula el promedio actualizado
+    average_rating = rating_service.get_average_rating(dataset_id)
+    
+    # Devuelve el promedio en JSON
+    return jsonify({'average_rating': average_rating}), 200
