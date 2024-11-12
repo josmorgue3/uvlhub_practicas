@@ -54,7 +54,7 @@
         </button>
         <!-- Promedio de valoraciones -->
         <span class="badge bg-warning text-dark" id="average-rating">
-            Average Rating: {{ average_rating if average_rating else 'No ratings yet' }}
+            Average Rating: {{ average_rating ~ " stars" if average_rating else 'No ratings yet' }}
         </span>
     </div>
 </div>
@@ -297,8 +297,18 @@
 
                                 
                             </div>
-                            <div class="col-12 text-end" >
-
+                            <div class="col-12 text-end">
+                                <!-- Botón para valorar el modelo -->
+                                <button onclick="openRateModelModal('{{ file.id }}')" class="btn btn-outline-warning btn-sm" style="border-radius: 5px;">
+                                    <i data-feather="star"></i> Rate
+                                </button>
+                                
+                                <!-- Media de valoraciones del modelo -->
+                                <span class="badge bg-warning text-dark" id="model-average-rating-{{ file.id }}">
+                                        {{ feature_model.average_rating ~ " stars" if feature_model.average_rating else 'No ratings' }}                                
+                                </span>
+                            
+                                <!-- Botón para ver el archivo -->
                                 <button onclick="viewFile('{{ file.id }}')" class="btn btn-outline-secondary btn-sm" style="border-radius: 5px;">
                                     <i data-feather="eye"></i> View
                                 </button>
@@ -390,7 +400,7 @@
     </div>
 </div>
 
-<!-- Modal de valoración -->
+<!-- Modal de valoración de datasets-->
 <div class="modal fade" id="rateModal" tabindex="-1" aria-labelledby="rateModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -425,6 +435,42 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de valoración de modelo -->
+<div class="modal fade" id="rateModelModal" tabindex="-1" aria-labelledby="rateModelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rateModelModalLabel">Rate this Model</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="mb-3">Please rate this model</p>
+                <form id="rate-model-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" id="model-id" name="model_id" value="">
+
+                    <!-- Barra de estrellas -->
+                    <div class="rating">
+                        <input type="radio" name="rating" value="5" id="model-5"><label for="model-5">☆</label>
+                        <input type="radio" name="rating" value="4" id="model-4"><label for="model-4">☆</label>
+                        <input type="radio" name="rating" value="3" id="model-3"><label for="model-3">☆</label>
+                        <input type="radio" name="rating" value="2" id="model-2"><label for="model-2">☆</label>
+                        <input type="radio" name="rating" value="1" id="model-1"><label for="model-1">☆</label>
+                    </div>
+
+                    <!-- Mostrar cantidad de estrellas seleccionadas -->
+                    <p id="model-rating-value" class="text-warning" style="font-size: 1.5rem; margin-top: 10px;">0 Stars</p>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitModelRating()">Submit Rating</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 
 <script type="text/javascript" src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
@@ -605,5 +651,46 @@
     });
     </script>
     
+    <script>
+        function openRateModelModal(modelId) {
+            document.getElementById("model-id").value = modelId;
+            const modal = new bootstrap.Modal(document.getElementById("rateModelModal"));
+            modal.show();
+        }
+        
+        function submitModelRating() {
+            const form = document.getElementById("rate-model-form");
+            const formData = new FormData(form);
+    
+        fetch("/model/rate", {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.average_rating) {
+                // Actualiza el promedio de valoraciones en el HTML
+                document.getElementById(`model-average-rating-${data.model_id}`).textContent = `${data.average_rating} Stars`;
+            } else {
+                // Si no hay valoraciones, muestra "No ratings"
+                document.getElementById(`model-average-rating-${data.model_id}`).textContent = "No ratings";
+            }
+            const modal = bootstrap.Modal.getInstance(document.getElementById("rateModelModal"));
+            modal.hide();
+        })
+        .catch(error => console.error("Error al enviar la valoración:", error));
+    }
+
+    </script>
+    
+    <script>
+        // Actualizar el valor de estrellas seleccionadas en el modal
+        document.querySelectorAll('input[name="rating"]').forEach((input) => {
+            input.addEventListener('change', (event) => {
+                const selectedRating = event.target.value;
+                document.getElementById('model-rating-value').textContent = `${selectedRating} Stars`;
+            });
+        });
+    </script>
 
 {% endblock %}

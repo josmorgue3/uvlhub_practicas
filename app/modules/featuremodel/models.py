@@ -40,3 +40,17 @@ class FMMetrics(db.Model):
 
     def __repr__(self):
         return f'FMMetrics<solver={self.solver}, not_solver={self.not_solver}>'
+
+
+class ModelRating(db.Model):
+    __tablename__ = 'model_ratings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    model_id = db.Column(db.Integer, db.ForeignKey('feature_model.id'), nullable=False)  # Cambia 'feature_model.id' según corresponda
+    rating = db.Column(db.Integer, nullable=False)
+
+    def __init__(self, user_id, model_id, rating):
+        self.user_id = user_id
+        self.model_id = model_id
+        self.rating = rating

@@ -243,30 +243,33 @@ def download_dataset(dataset_id):
 
 @dataset_bp.route("/doi/<path:doi>/", methods=["GET"])
 def subdomain_index(doi):
-    # Check if the DOI is an old DOI
+    # Obtiene el nuevo DOI si corresponde
     new_doi = doi_mapping_service.get_new_doi(doi)
     if new_doi:
-        # Redirect to the same path with the new DOI
         return redirect(url_for('dataset.subdomain_index', doi=new_doi), code=302)
 
-    # Try to search the dataset by the provided DOI (which should already be the new one)
+    # Obtiene la metadata y verifica si existe
     ds_meta_data = dsmetadata_service.filter_by_doi(doi)
-
     if not ds_meta_data:
         abort(404)
 
-    # Get dataset
+    # Obtiene el dataset
     dataset = ds_meta_data.data_set
 
     # Calcula el promedio de valoraciones del dataset
-    average_rating = RatingService.get_average_rating(dataset.id)  # Asegúrate de que `get_average_rating` esté bien implementado
+    average_rating = RatingService.get_average_rating(dataset.id)
 
-    # Guarda la cookie en el navegador del usuario
+    # Calcula y asigna la media de valoración para cada modelo
+    for model in dataset.feature_models:
+        model.average_rating = RatingService.get_average_model_rating(model.id)
+
+    # Renderiza la plantilla pasando los valores calculados
     user_cookie = ds_view_record_service.create_cookie(dataset=dataset)
     resp = make_response(render_template("dataset/view_dataset.html", dataset=dataset, average_rating=average_rating))
     resp.set_cookie("view_cookie", user_cookie)
 
     return resp
+
 
 
 
